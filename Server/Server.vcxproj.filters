@@ -9,27 +9,18 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Shared">
-      <UniqueIdentifier>{d58f47cb-f273-49ee-a7da-88d3ada625ae}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Server.cpp">
+    <ClCompile Include="Server.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\jsonParsing.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Server.h">
+    <ClInclude Include="Connection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared\Connection.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\jsonParsing.h">
-      <Filter>Shared</Filter>
+    <ClInclude Include="JsonParsing.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

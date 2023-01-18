@@ -19,13 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\shared\jsonParsing.cpp" />
-    <ClCompile Include="src\dllmain.cpp" />
+    <ClInclude Include="ModManager.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\shared\Connection.h" />
-    <ClInclude Include="..\shared\jsonParsing.h" />
-    <ClInclude Include="src\ModManager.h" />
+    <ClCompile Include="dllmain.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -89,8 +86,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)builds\</OutDir>
-    <LibraryPath>$(LibraryPath)F:\Shrek\Modding\Shrek2ModdingSDK\dependencies\detours\lib.X86;F:\Shrek\Modding\Shrek2ModdingSDK\dependencies\dxsdk\lib</LibraryPath>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);F:\Shrek\Modding\Shrek2ModdingSDK\dependencies\detours\include;F:\Shrek\Modding\Shrek2ModdingSDK\dependencies\dxsdk\include</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(SolutionDir)Dependencies\detours\lib.X86;$(SolutionDir)Dependencies\dxsdk\lib</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Dependencies\detours\include;$(SolutionDir)Dependencies\dxsdk\include</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -135,7 +132,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);F:\Shrek\Modding\Shrek2ModdingSDK\Shrek2ModdingSDK\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(SolutionDir)Dependencies\Shrek2ModdingSDK\include</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
@@ -145,7 +142,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);F:\Shrek\Modding\Shrek2ModdingSDK\Shrek2ModdingSDK\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(SolutionDir)Dependencies\Shrek2ModdingSDK\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>Shrek2ModdingSDK.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <IgnoreSpecificDefaultLibraries>libci.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
