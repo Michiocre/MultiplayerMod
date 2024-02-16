@@ -178,7 +178,11 @@ let commands = {
                     console.log('  ' + value.generalHelp);
                 }
             } else {
-                console.log(commands[args[1]].help);
+                try {
+                    console.log(commands[args[1]].help);
+                } catch (error) {
+                    console.log('Could not find any help to the command you were looking for');
+                }
             }
         }
     },
