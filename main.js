@@ -169,7 +169,7 @@ let commands = {
         help: '\nUsage: help [command]\n\n' +
             'Arguments:\n' +
             '  command          name of the command you want help with',
-        generalHelp: 'help [command]     display help for command',
+        generalHelp: 'help [command]       display help for command',
         options: [],
         action: (args, options) => {
             if (args.length <= 1) {
@@ -186,7 +186,7 @@ let commands = {
         help: '\nUsage: host -p <number>\n\n' +
             'Options:\n' +
             '  -p        port the server should start on',
-        generalHelp: 'host [options]     starts up a shrek2mp server instance',
+        generalHelp: 'host [options]       starts up a shrek2mp server instance',
         options: [
             {
                 name: '-p',
@@ -199,7 +199,7 @@ let commands = {
     },
     'stop': {
         help: '\nUsage: stop\n',
-        generalHelp: 'stop               stops the currently running server',
+        generalHelp: 'stop                 stops the currently running server',
         options: [],
         action: stopAction
     },
@@ -208,7 +208,7 @@ let commands = {
         'Options:\n' +
         '  -h        ip address of the host you want to connect to\n' +
         '  -p        port the server should start on',
-        generalHelp: 'connect [options]  connect as a client to a running server',
+        generalHelp: 'connect [options]    connect as a client to a running server',
         options: [
             {
                 name: '-h',
@@ -227,7 +227,7 @@ let commands = {
     },
     'disconnect': {
         help: '\nUsage: disconnect\n',
-        generalHelp: 'disconnect         ends the current connection',
+        generalHelp: 'disconnect           ends the current connection',
         options: [],
         action: disconnectAction
     },
@@ -235,7 +235,7 @@ let commands = {
         help: '\nUsage: tail [filename]\n' +
             '\nArguments:\n' +
             '  tail [filename]  name of the file to be watched',
-        generalHelp: 'tail               starts watching a file for changes',
+        generalHelp: 'tail [arguments]     starts watching a file for changes',
         options: [],
         freeArgsNeeded: 1,
         action: tailAction
@@ -243,8 +243,8 @@ let commands = {
     'writeTo': {
         help: '\nUsage: writeTo [filename]\n' +
             '\nArguments:\n' +
-            '  writeTo [filename]  name of the file to be watched',
-        generalHelp: 'writeTo            opens a file as the output for incomming messages',
+            '  writeTo [filename]  name of the new output file',
+        generalHelp: 'writeTo [arguments]  opens a file as the output for incomming messages',
         options: [],
         freeArgsNeeded: 1,
         action: writeToAction
