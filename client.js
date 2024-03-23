@@ -2,11 +2,10 @@ import { io } from "socket.io-client";
 import fs from 'fs';
 
 class S2Client {
-    constructor(host, port, outFile) {
+    constructor(host, port, folderPath) {
         this.host = host;
         this.port = port;
         this.running = false;
-        this.outFile = outFile;
 
         this.socket = io(`http://${host}:${port}`);
         this.socket.connect();
@@ -22,8 +21,9 @@ class S2Client {
         });
 
         this.socket.on('message', (data) => {
-            console.log(data);
-            fs.writeSync(this.outFile, data);
+            fs.writeFile(folderPath + 'Server.S2M', data, (err) => {
+                if (err) throw err;
+            });
         });
     }
 
@@ -31,8 +31,7 @@ class S2Client {
         this.socket.disconnect();
     }
 
-    message(data) {
-        console.log('Sending:     ' + data);
+    sendData(data) {
         this.socket.emit('message', data);
     }
 }

@@ -4,11 +4,10 @@ import fs from 'fs';
 import { Server } from 'socket.io';
 
 class S2Server {
-    constructor(port, outFile) {
+    constructor(port, folderPath) {
         this.app = express();
         this.server = http.createServer(this.app);
         this.io = new Server(this.server);
-        this.outFile = outFile;
 
         this.sockets = new Set();
         this.running = false;
@@ -24,7 +23,9 @@ class S2Server {
 
             socket.on('message', (data) => {
                 socket.broadcast.emit('message', data);
-                fs.writeSync(this.outFile, data);
+                fs.writeFile(folderPath + 'Server.S2M', data, (err) => {
+                    if (err) throw err;
+                });
             })
         });
 
@@ -46,12 +47,8 @@ class S2Server {
         console.log('Server has been stopped');
     }
 
-    message(data) {
+    sendData(data) {
         this.io.emit('message', data);
-    }
-
-    setOutFile(outFile) {
-        this.outFile = outFile;
     }
 }
 
