@@ -1,4 +1,4 @@
-import fs from 'fs';
+import utils from './utils.js';
 import { S2Server } from './server.js';
 import { S2Client } from './client.js';
 import { performance } from 'perf_hooks';
@@ -21,14 +21,18 @@ setInterval(async () => {
 }, Math.floor(1000 / 60));
 
 async function main() {
-    fs.readFile(folderPath + 'ClientLevel.S2M', 'utf8', (err, levelData) => {
+    utils.insistentReadFile(folderPath + 'ClientLevel.S2M', (err, levelData, message) => {
         if (err) {
-            return console.log('ClientLevel.S2M couldnt be oppened, try again next tick.');
+            console.log(message);
+            return;
         };
-        fs.readFile(folderPath + 'ClientPlayers.S2M', 'utf8', (err, playerData) => {
+
+        utils.insistentReadFile(folderPath + 'ClientPlayers.S2M', (err, playerData, message) => {
             if (err) {
-                return console.log('ClientPlayers.S2M couldnt be oppened, try again next tick.');
+                console.log(message);
+                return;
             };
+
             sendData(JSON.stringify({
                 type: 'general',
                 level: levelData,
@@ -38,9 +42,10 @@ async function main() {
         });
     });
 
-    fs.readFile(folderPath + 'Events.S2M', 'utf8', (err, data) => {
+    utils.insistentReadFile(folderPath + 'Events.S2M', (err, data, message) => {
         if (err) {
-            return console.log('File couldnt be opened, try again next tick.');
+            console.log(message);
+            return;
         };
 
         let lines = data.split('\n').concat(eventWriteQueue);
@@ -60,9 +65,11 @@ async function main() {
         let newData = newLines.join('\n');
         if (newData != data) {
             console.log(JSON.stringify(newData.trim() + '\n'));
-            fs.writeFile(folderPath + 'Events.S2M', newData.trim() + '\r\n', (err) => {
+
+            utils.insistentWriteFile(folderPath + 'Events.S2M', newData.trim(), (err, message) => {
                 if (err) {
-                    return console.error('!!!could not write to the events file');
+                    console.error('!!!could not write to the events file', message);
+                    return; 
                 };
             });
         }

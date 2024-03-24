@@ -1,4 +1,4 @@
-import fs from 'fs';
+import utils from './utils.js';
 import net from 'net';
 
 class S2Server {
@@ -10,13 +10,16 @@ class S2Server {
             console.log('Connection from', socket.remoteAddress, 'port', socket.remotePort);
             this.sockets.add(socket);
 
-            fs.readFile(folderPath + 'InitServerLevel.S2M', 'utf8', (err, levelData) => {
+            utils.insistentReadFile(folderPath + 'InitServerLevel.S2M', (err, levelData, message) => {
                 if (err) {
-                    return console.log('InitServerLevel.S2M couldnt be opened, try again next tick.');
+                    console.log(message);
+                    return;
                 };
-                fs.readFile(folderPath + 'InitServerPlayers.S2M', 'utf8', (err, playerData) => {
+
+                utils.insistentReadFile(folderPath + 'InitServerPlayers.S2M', (err, playerData, message) => {
                     if (err) {
-                        return console.log('InitServerPlayers.S2M couldnt be opened, try again next tick.');
+                        console.log(message);
+                        return;
                     };
                     socket.write(
                         JSON.stringify({
@@ -38,33 +41,27 @@ class S2Server {
                 try {
                     packet = JSON.parse(data);
                 } catch (error) {
-                    return console.log('there was a error parsing json: ', error);
+                    console.log('There was a error parsing json: ', error, data);
+                    return;
                 }
 
                 if (packet.type == 'ping') {
                     console.log('pong');
+                    return;
                 }
                 
-                fs.readFile(folderPath + 'ServerLevel.S2M', (err, data) => {
+                utils.insistentAppend(folderPath + 'ServerLevel.S2M', packet.level, (err, message) => {
                     if (err) {
-                        return console.log('ServerLevel.S2M couldnt be oppened, try again next tick.');
-                    };
-                    fs.writeFile(folderPath + 'ServerLevel.S2M', (data + packet.level).trim() + '\r\n' , (err) => {
-                        if (err) {
-                            return console.error('!!could not write to the ServerLevel.S2M file');
-                        };
-                    });
+                        console.log(message);
+                        return;
+                    }
                 });
-
-                fs.readFile(folderPath + 'ServerPlayers.S2M', (err, data) => {
+    
+                utils.insistentAppend(folderPath + 'ServerPlayers.S2M', packet.player, (err, message) => {
                     if (err) {
-                        return console.log('ServerPlayers.S2M couldnt be oppened, try again next tick.');
-                    };
-                    fs.writeFile(folderPath + 'ServerPlayers.S2M', (data + packet.player).trim() + '\r\n' , (err) => {
-                        if (err) {
-                            return console.error('!!could not write to the ServerPlayers.S2M file');
-                        };
-                    });
+                        console.log(message);
+                        return;
+                    }
                 });
             })
 
