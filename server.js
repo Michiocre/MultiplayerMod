@@ -1,46 +1,94 @@
-import express from 'express';
-import http from 'http';
 import fs from 'fs';
-import { Server } from 'socket.io';
+import net from 'net';
 
 class S2Server {
-    constructor(port, folderPath) {
-        this.app = express();
-        this.server = http.createServer(this.app);
-        this.io = new Server(this.server);
-
+    constructor(port, folderPath, eventCallback) {
         this.sockets = new Set();
         this.running = false;
 
-        this.io.on('connection', (socket) => {
-            console.log(`User with id [${socket.id}] has connected`);
+        this.server = net.createServer((socket) => {
+            console.log('Connection from', socket.remoteAddress, 'port', socket.remotePort);
             this.sockets.add(socket);
 
-            socket.on('disconnect', (reason) => {
-                console.log(`User with id [${socket.id}] has disconnected due to "${reason}"`);
+            fs.readFile(folderPath + 'InitServerLevel.S2M', 'utf8', (err, levelData) => {
+                if (err) {
+                    return console.log('InitServerLevel.S2M couldnt be opened, try again next tick.');
+                };
+                fs.readFile(folderPath + 'InitServerPlayers.S2M', 'utf8', (err, playerData) => {
+                    if (err) {
+                        return console.log('InitServerPlayers.S2M couldnt be opened, try again next tick.');
+                    };
+                    socket.write(
+                        JSON.stringify({
+                            type: 'initServer',
+                            level: levelData,
+                            player: playerData
+                        })
+                    );
+                });
+            });
+
+            socket.on('data', (data) => {
+                this.sockets.forEach(other => {
+                    if (other != socket) {
+                        other.write(data);
+                    }
+                });
+                let packet;
+                try {
+                    packet = JSON.parse(data);
+                } catch (error) {
+                    return console.log('there was a error parsing json: ', error);
+                }
+
+                if (packet.type == 'ping') {
+                    console.log('pong');
+                }
+                
+                fs.readFile(folderPath + 'ServerLevel.S2M', (err, data) => {
+                    if (err) {
+                        return console.log('ServerLevel.S2M couldnt be oppened, try again next tick.');
+                    };
+                    fs.writeFile(folderPath + 'ServerLevel.S2M', (data + packet.level).trim() + '\r\n' , (err) => {
+                        if (err) {
+                            return console.error('!!could not write to the ServerLevel.S2M file');
+                        };
+                    });
+                });
+
+                fs.readFile(folderPath + 'ServerPlayers.S2M', (err, data) => {
+                    if (err) {
+                        return console.log('ServerPlayers.S2M couldnt be oppened, try again next tick.');
+                    };
+                    fs.writeFile(folderPath + 'ServerPlayers.S2M', (data + packet.player).trim() + '\r\n' , (err) => {
+                        if (err) {
+                            return console.error('!!could not write to the ServerPlayers.S2M file');
+                        };
+                    });
+                });
+            })
+
+            socket.on('end', () => {
+                console.log('Closed', socket.remoteAddress, 'port', socket.remotePort)
                 this.sockets.delete(socket);
             });
 
-            socket.on('message', (data) => {
-                socket.broadcast.emit('message', data);
-                fs.writeFile(folderPath + 'Server.S2M', data, (err) => {
-                    if (err) throw err;
-                });
-            })
+            socket.on('error', (err) => {
+                console.log('Socket Event Error: ', err);
+                this.sockets.delete(socket);
+            });
         });
 
-        this.server.listen(port, () => {
-            console.log(`listening on port ${port}`);
+        this.server.listen(port, '127.0.0.1', 10, () => {
+            eventCallback('!Start')
+            console.log(`Listening on port ${port}`);
             this.running = true;
-        }).on('error', (error) => {
-            console.log('Could not start server');
-            console.log(`Error Code: ${error.code}`);
         });
     }
 
     stopServer() {
         this.sockets.forEach(socket => {
-            socket.disconnect();
+            socket.end();
         });
         this.server.close();
         this.running = false;
@@ -48,7 +96,9 @@ class S2Server {
     }
 
     sendData(data) {
-        this.io.emit('message', data);
+        this.sockets.forEach(socket => {
+            socket.write(data);
+        });
     }
 }
 
