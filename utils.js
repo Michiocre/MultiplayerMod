@@ -9,8 +9,8 @@ import fs from 'fs';
  * @param {number} delay Delay between writeFile calls in ms
  * @param {number} c Current iteration variable - dont set
 */
-function insistentWriteFile(path, data, callback, attempts = 5, delay = 3, c = 0) {
-    fs.writeFile(path, data + '\r\n', (err) => {
+function insistentWriteFile(path, data, callback = () => {}, attempts = 5, delay = 3, c = 0) {
+    fs.writeFile(path, data.trim() + '\r\n', (err) => {
         c++;
         if (err) {
             if (c == attempts) {
@@ -37,7 +37,7 @@ function insistentWriteFile(path, data, callback, attempts = 5, delay = 3, c = 0
  * @param {number} delay Delay between writeFile calls in ms
  * @param {number} c Current iteration variable - dont set
 */
-function insistentReadFile(path, callback, attempts = 5, delay = 3, c = 0) {
+function insistentReadFile(path, callback = () => {}, attempts = 5, delay = 3, c = 0) {
     fs.readFile(path, 'utf8', (err, data) => {
         c++;
         if (err) {
@@ -66,12 +66,12 @@ function insistentReadFile(path, callback, attempts = 5, delay = 3, c = 0) {
  * @param {number} attempts Maximum amount of writeFile calls before error
  * @param {number} delay Delay between writeFile calls in ms
  */
-function insistentAppend(path, data, callback, attempts = 5, delay = 3) {
+function insistentAppend(path, data, callback = () => {}, attempts = 5, delay = 3) {
     insistentReadFile(path, (err, readData, message) => {
         if (err) {
             callback(err, `Append failed due to: ${message}`)
         } else {
-            insistentWriteFile(path, (readData + data).trim() + '\r\n' , (err, message) => {
+            insistentWriteFile(path, (readData + data).trim(), (err, message) => {
                 if (err) {
                     callback(err, `Append failed due to: ${message}`)
                 } else {

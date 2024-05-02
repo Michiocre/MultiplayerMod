@@ -21,6 +21,7 @@ class S2Server {
                         console.log(message);
                         return;
                     };
+                    
                     socket.write(
                         JSON.stringify({
                             type: 'initServer',
@@ -44,9 +45,38 @@ class S2Server {
                     console.log('There was a error parsing json: ', error, data);
                     return;
                 }
+                console.log(packet);
 
                 if (packet.type == 'ping') {
                     console.log('pong');
+                    return;
+                }
+
+                if (packet.type == 'event') {
+                    utils.insistentAppend(folderPath + 'Events.S2M', packet.message, (err, message) => {
+                        if (err) {
+                            console.log(message);
+                            return;
+                        }
+                    });
+                    return;
+                }
+
+                if (packet.type == 'newPlayer') {
+                    utils.insistentAppend(folderPath + 'InitServerPlayers.S2M', packet.player, (err, message) => {
+                        if (err) {
+                            console.log(message);
+                            return;
+                        }
+                    });
+
+                    utils.insistentAppend(folderPath + 'Events.S2M', 'ClientConnected', (err, message) => {
+                        if (err) {
+                            console.log(message);
+                            return;
+                        }
+                    });
+
                     return;
                 }
                 
@@ -94,7 +124,7 @@ class S2Server {
 
     sendData(data) {
         this.sockets.forEach(socket => {
-            socket.write(data);
+            socket.write(JSON.stringify(data));
         });
     }
 }

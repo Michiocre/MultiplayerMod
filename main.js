@@ -7,11 +7,32 @@ let server = {};
 let client = {};
 
 let tickStartTime;
+let sendNext = false;
+let unlock = false;
 
 let folderPath = './S2Multi/'
 if (process.argv.length > 2) {
-   folderPath = process.argv[2];
+    folderPath = process.argv[2];
+
+    let stdin = process.openStdin();
+    stdin.addListener("data", function(d) {
+        let input = d.toString().trim();
+
+        if (input == 'send') {
+            sendNext = true;
+        }
+        if (input == 'unlock') {
+            unlock = true;
+        }
+        if (input == 'lock') {
+            unlock = false;
+        }
+    });
 }
+
+utils.insistentWriteFile(folderPath + 'Events.S2M', '');
+utils.insistentWriteFile(folderPath + 'ServerLevel.S2M', '');
+utils.insistentWriteFile(folderPath + 'ServerPlayers.S2M', '');
 
 let eventWriteQueue = [];
 
@@ -33,11 +54,15 @@ async function main() {
                 return;
             };
 
-            sendData(JSON.stringify({
-                type: 'general',
-                level: levelData,
-                player: playerData
-            }));
+
+            if (sendNext || unlock) {
+                sendNext = false;
+                sendData({
+                    type: 'general',
+                    level: levelData,
+                    player: playerData
+                });
+            }
             //console.log(`Reading Client took ${performance.now() - tickStartTime} milliseconds`)
         });
     });
@@ -48,7 +73,7 @@ async function main() {
             return;
         };
 
-        let lines = data.split('\n').concat(eventWriteQueue);
+        let lines = data.split('\r\n').concat(eventWriteQueue);
         eventWriteQueue = [];
         let newLines = [];
         for (let line of lines) {
@@ -62,11 +87,11 @@ async function main() {
             }
         }
 
-        let newData = newLines.join('\n');
-        if (newData != data) {
-            console.log(JSON.stringify(newData.trim() + '\n'));
+        let newData = newLines.join('\r\n');
 
-            utils.insistentWriteFile(folderPath + 'Events.S2M', newData.trim(), (err, message) => {
+        if (newData != data) {
+            console.log(JSON.stringify(newData.trim() + '\r\n'))
+            utils.insistentWriteFile(folderPath + 'Events.S2M', newData, (err, message) => {
                 if (err) {
                     console.error('!!!could not write to the events file', message);
                     return; 
@@ -95,10 +120,11 @@ function handleEvent(event) {
     if (args[0] == '#Start') {
         if (server?.running || client?.running) {
             console.log('There is already a connection');
-            return '!Error Start';
+            return '!Chat#Server#Could not start the server';
         }
 
-        server = new S2Server(args[1] || 8989, folderPath, eventCallback);
+        server = new S2Server(Number.parseInt(args[1]) || 8989, folderPath, eventCallback);
+        
         return;
     }
 
@@ -119,14 +145,6 @@ function handleEvent(event) {
         client = new S2Client(args[1] || '127.0.0.1', args[2] || 8989, folderPath, eventCallback);
 
         return;
-
-        // fs.readFile(folderPath + 'InitClient.S2M', 'utf8', (err, data) => {
-        //     if (err) {
-        //         return console.log('File couldnt be opened, try again next tick.');
-        //     };
-
-        //     client.sendData('initClient', data);
-        // });
     }
 
     if (args[0] == '#Ping') {
@@ -135,18 +153,40 @@ function handleEvent(event) {
             return '!Error Ping';
         }
 
-        sendData(JSON.stringify({
+        sendData({
             type: 'ping'
-        }));
+        });
         return '!Ping';
     }
 
     if (args[0] == '#Disconnect') {
         if (!server?.running && !client?.running) {
             console.log('there is no connection');
-            return '!Error Disconnect';
+            return;
         }
-        client.disconnect();
-        return '!Disconnected'; 
+
+        if (client?.running) {
+            client.disconnect();
+            return '!Disconnected';
+        } 
     }
+
+    if (args[0].startsWith('#Chat')) {
+        // console.log(args[0]);
+        // let chatArgs = args[0].split('#');
+        // chatArgs.shift();
+        // chatArgs.shift();
+        // let id = chatArgs.shift();
+        // args.shift();
+        // let message = chatArgs.join('#') + ' ' + args.join(' ');
+        let message = "!" + args.join(' ').substring(1);
+
+        sendData({
+            type: 'event',
+            message: message
+        });
+        return;
+    }
+
+    console.log('New unhandled event message: ' + args[0])
 }
