@@ -11,6 +11,7 @@ class S2Client {
         this.connectedIds = new Set();
 
         this.socket = new net.Socket();
+        console.log('Created new client')
         this.socket.connect(port, host, () => {
             console.log(`Connection established with ${host}:${port}`);
             this.running = true;
@@ -32,12 +33,7 @@ class S2Client {
             }
 
             if (packet.type == 'event') {
-                utils.insistentAppend(folderPath + 'Events.S2M', packet.message, (err, message) => {
-                    if (err) {
-                        console.log(message);
-                        return;
-                    }
-                });
+                eventCallback(packet.message);
                 return;
             }
 
@@ -62,7 +58,9 @@ class S2Client {
                     this.connectedIds.add(id);
                 }
 
-                console.log('Recieved initServer')
+                let levelName = packet.player.split('.')[0];
+
+                console.log('Recieved initServer on level: ' + levelName);
                 utils.insistentWriteFile(this.folderPath + 'InitServerLevel.S2M', packet.level, (err, message) => {
                     if (err) {
                         eventCallback('!Error Connect');
@@ -76,9 +74,10 @@ class S2Client {
                             console.error('!!could not write to the InitServerPlayers.S2M file', message);
                             return;
                         }
-                        eventCallback('!Connected');
+                        eventCallback(`!ChangeLevel#${levelName}\r\n!Connected`);
                     });
                 });
+                return;                
             }
         });
         

@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "nodemon main.js",
+    "server": "nodemon main.js \"D:/Shrek/Shrek 2/System/S2Multi/\"",
+    "client": "nodemon main.js \"D:/Shrek/Fresh Shrek2/System/S2Multi/\"",
     "build": "rollup main.js --file ./dist/bundle.js --format cjs && pkg ./dist/bundle.js -t node18-win-x64 -o ./dist/GSpyLite.exe"
   },
   "repository": {

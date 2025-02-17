@@ -1,5 +1,6 @@
 import utils from './utils.js';
 import net from 'net';
+import fs from 'fs';
 
 class S2Server {
     constructor(port, folderPath, eventCallback) {
@@ -53,12 +54,7 @@ class S2Server {
                 }
 
                 if (packet.type == 'event') {
-                    utils.insistentAppend(folderPath + 'Events.S2M', packet.message, (err, message) => {
-                        if (err) {
-                            console.log(message);
-                            return;
-                        }
-                    });
+                    eventCallback(packet.message);
                     return;
                 }
 
@@ -70,13 +66,7 @@ class S2Server {
                         }
                     });
 
-                    utils.insistentAppend(folderPath + 'Events.S2M', 'ClientConnected', (err, message) => {
-                        if (err) {
-                            console.log(message);
-                            return;
-                        }
-                    });
-
+                    eventCallback('!ClientConnected\r\n!Chat#Server#New Client Connected');
                     return;
                 }
                 

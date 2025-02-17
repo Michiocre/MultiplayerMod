@@ -42,7 +42,7 @@ function insistentReadFile(path, callback = () => {}, attempts = 5, delay = 3, c
         c++;
         if (err) {
             if (err.code == 'ENOENT') {
-                callback(err, null, `No file, so stopped retrying after ${c} attempt`);
+                callback(err, null, `No file, so stopped retrying after ${c} attempt ${err}`);
             } else if (c == attempts) {
                 callback(err, null, `Failed to read after ${c} attempts`);
             } else {

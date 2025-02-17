@@ -90,7 +90,7 @@ async function main() {
         let newData = newLines.join('\r\n');
 
         if (newData != data) {
-            console.log(JSON.stringify(newData.trim() + '\r\n'))
+            console.log("Contents for eventFile: " + JSON.stringify(newData.trim() + '\r\n'))
             utils.insistentWriteFile(folderPath + 'Events.S2M', newData, (err, message) => {
                 if (err) {
                     console.error('!!!could not write to the events file', message);
@@ -172,13 +172,6 @@ function handleEvent(event) {
     }
 
     if (args[0].startsWith('#Chat')) {
-        // console.log(args[0]);
-        // let chatArgs = args[0].split('#');
-        // chatArgs.shift();
-        // chatArgs.shift();
-        // let id = chatArgs.shift();
-        // args.shift();
-        // let message = chatArgs.join('#') + ' ' + args.join(' ');
         let message = "!" + args.join(' ').substring(1);
 
         sendData({
@@ -188,5 +181,17 @@ function handleEvent(event) {
         return;
     }
 
-    console.log('New unhandled event message: ' + args[0])
+    if (args[0].startsWith('#GCC')) {
+        let message = "!" + args.join(' ').substring(1);
+
+        eventWriteQueue.push(message);
+
+        sendData({
+            type: 'event',
+            message: message
+        });
+        return;
+    }
+
+    console.log('New unhandled event message: ' + event)
 }
