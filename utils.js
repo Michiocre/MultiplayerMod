@@ -82,4 +82,29 @@ function insistentAppend(path, data, callback = () => {}, attempts = 5, delay = 
     }, attempts, delay);
 }
 
-export default { insistentWriteFile, insistentReadFile, insistentAppend }
+/**
+ * Tries reading a file, removing all the lines that start with the lineStart value, the overwrites 
+ * @param {string} path Filepath
+ * @param {string} lineStart Compare Value
+ * @param {function(err, message)} callback Callback function
+ * @param {number} attempts Maximum amount of writeFile calls before error
+ * @param {number} delay Delay between writeFile calls in ms
+ */
+function removeLineByStart(path, lineStart, callback = () => {}, attempts = 5, delay = 3) {
+    insistentReadFile(path, (err, readData, message) => {
+        if (err) {
+            callback(err, `Remove failed due to: ${message}`);
+        } else {
+            let writeData = readData.split('\r\n').filter(line => !line.startsWith(lineStart)).join('\r\n');
+            insistentWriteFile(path, writeData, (err, message) => {
+                if (err) {
+                    callback(err, `Remove failed due to: ${message}`);
+                } else {
+                    callback(null, `Remove success`);
+                }
+            }, attempts, delay);
+        }
+    }, attempts, delay);
+}
+
+export default { insistentWriteFile, insistentReadFile, insistentAppend, removeLineByStart }

@@ -193,5 +193,25 @@ function handleEvent(event) {
         return;
     }
 
+    if (args[0].startsWith('#HOST_DESTROY')) {
+        if (server?.running) {
+            let message = "!" + args.join('#').substring(1);
+
+            utils.removeLineByStart(folderPath + 'InitServerLevel.S2M', args[0].split('#')[2], (err, message) => {
+                if (err) {
+                    console.log(message);
+                }
+            });
+    
+            if (server?.running) {
+                sendData({
+                    type: 'event',
+                    message: message
+                });
+            }
+        }
+        return;
+    }
+
     console.log('New unhandled event message: ' + event)
 }

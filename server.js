@@ -1,6 +1,5 @@
 import utils from './utils.js';
 import net from 'net';
-import fs from 'fs';
 
 class S2Server {
     constructor(port, folderPath, eventCallback) {
@@ -46,7 +45,7 @@ class S2Server {
                     console.log('There was a error parsing json: ', error, data);
                     return;
                 }
-                console.log(packet);
+                //console.log(packet);
 
                 if (packet.type == 'ping') {
                     console.log('pong');

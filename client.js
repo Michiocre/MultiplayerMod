@@ -25,7 +25,7 @@ class S2Client {
                 console.log('There was a error parsing json: ', error, data);
                 return;
             }
-            console.log(packet);
+            //console.log(packet);
 
             if (packet.type == 'ping') {
                 console.log('pong');
@@ -121,8 +121,6 @@ class S2Client {
                 }
             }
         }
-
-        console.log("Data being sent: " + JSON.stringify(data))
 
         if (!this.socket.destroyed) {
             this.socket.write(JSON.stringify(data), (err) => {
