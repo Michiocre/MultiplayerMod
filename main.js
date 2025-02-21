@@ -203,12 +203,53 @@ function handleEvent(event) {
                 }
             });
     
-            if (server?.running) {
-                sendData({
-                    type: 'event',
-                    message: message
-                });
-            }
+            sendData({
+                type: 'event',
+                message: message
+            });
+        }
+        return;
+    }
+
+    if (args[0].startsWith('#CLIENT_DESTROY')) {
+        if (client?.running) {
+            let message = "!" + args.join('#').substring(1);
+
+            // DO i have to do this???? how ? translate ??
+            // utils.removeLineByStart(folderPath + 'InitServerLevel.S2M', args[0].split('#')[2], (err, message) => {
+            //     if (err) {
+            //         console.log(message);
+            //     }
+            // });
+    
+            sendData({
+                type: 'event',
+                message: message
+            });
+        }
+        return;
+    }
+
+    if (args[0].startsWith('#CLIENT_CREATE')) {
+        if (client?.running) {
+            let message = "!" + args.join('#').substring(1);
+    
+            sendData({
+                type: 'event',
+                message: message
+            });
+        }
+        return;
+    }
+
+    if (args[0].startsWith('#HOST_CREATE')) {
+        if (server?.running) {
+            let message = "!" + args.join('#').substring(1);
+    
+            sendData({
+                type: 'event',
+                message: message
+            });
         }
         return;
     }

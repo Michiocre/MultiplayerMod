@@ -38,6 +38,7 @@ class S2Server {
                         other.write(data);
                     }
                 });
+                
                 let packet;
                 try {
                     packet = JSON.parse(data);
