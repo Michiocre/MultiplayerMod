@@ -1,8 +1,7 @@
-import utils from './utils.js';
 import net from 'net';
 
 class S2Server {
-    constructor(port, folderPath, eventCallback) {
+    constructor(port, eventCallback, dataHandler) {
         this.sockets = new Set();
         this.running = false;
 
@@ -10,80 +9,7 @@ class S2Server {
             console.log('Connection from', socket.remoteAddress, 'port', socket.remotePort);
             this.sockets.add(socket);
 
-            utils.insistentReadFile(folderPath + 'InitServerLevel.S2M', (err, levelData, message) => {
-                if (err) {
-                    console.log(message);
-                    return;
-                };
-
-                utils.insistentReadFile(folderPath + 'InitServerPlayers.S2M', (err, playerData, message) => {
-                    if (err) {
-                        console.log(message);
-                        return;
-                    };
-                    
-                    socket.write(
-                        JSON.stringify({
-                            type: 'initServer',
-                            level: levelData,
-                            player: playerData
-                        })
-                    );
-                });
-            });
-
-            socket.on('data', (data) => {
-                this.sockets.forEach(other => {
-                    if (other != socket) {
-                        other.write(data);
-                    }
-                });
-                
-                let packet;
-                try {
-                    packet = JSON.parse(data);
-                } catch (error) {
-                    console.log('There was a error parsing json: ', error, data);
-                    return;
-                }
-                //console.log(packet);
-
-                if (packet.type == 'ping') {
-                    console.log('pong');
-                    return;
-                }
-
-                if (packet.type == 'event') {
-                    eventCallback(packet.message);
-                    return;
-                }
-
-                if (packet.type == 'newPlayer') {
-                    utils.insistentAppend(folderPath + 'InitServerPlayers.S2M', packet.player, (err, message) => {
-                        if (err) {
-                            console.log(message);
-                            return;
-                        }
-                    });
-
-                    eventCallback('!ClientConnected\r\n!Chat#Server#New Client Connected');
-                    return;
-                }
-                
-                utils.insistentAppend(folderPath + 'ServerLevel.S2M', packet.level, (err, message) => {
-                    if (err) {
-                        console.log(message);
-                        return;
-                    }
-                });
-    
-                utils.insistentAppend(folderPath + 'ServerPlayers.S2M', packet.player, (err, message) => {
-                    if (err) {
-                        console.log(message);
-                        return;
-                    }
-                });
-            })
+            socket.on('data', dataHandler);
 
             socket.on('end', () => {
                 console.log('Closed', socket.remoteAddress, 'port', socket.remotePort)
