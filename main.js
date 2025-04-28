@@ -7,6 +7,7 @@ import { performance } from 'perf_hooks';
 let server = {};
 let client = {};
 
+let playerState = null;
 let actorState = [];
 let tickState = 0;
 
@@ -34,18 +35,82 @@ if (process.argv.length > 2) {
     });
 }
 
-//utils.insistentWriteFile(folderPath + 'Output.S2M', '');
+utils.insistentWriteFile(folderPath + 'Output.S2M', '');
 utils.insistentWriteFile(folderPath + 'Input.S2M', '');
 utils.insistentWriteFile(folderPath + 'EventInput.S2M', '');
 
 let eventWriteQueue = [];
+let mainLock = false;
 
 setInterval(async () => {
-    tickStartTime = performance.now()
-    main();
+    tickStartTime = performance.now();
+    if (!mainLock) {
+        main();
+    }
+
+    if (server?.running) {
+        serverMain();
+    }
+    if (client?.running) {
+        clientMain();
+    }
 }, Math.floor(1000 / 60));
 
-async function main() {
+function main() {
+    mainLock = true;
+    utils.insistentReadFile(folderPath + 'EventOutput.S2M', (err, data, message) => {
+        if (err) {
+            mainLock = false;
+            console.log(message);
+            return;
+        }
+
+        let lines = data.split('\r\n');
+        for (let line of lines) {
+            if (line[0] == '#') {
+                console.log(line)
+                let response = handleEvent(line);
+                if (response) {
+                    eventWriteQueue.push(response);
+                }
+            }
+        }
+        
+        if (!(lines[0] == '' && lines[1] == '')) {            
+            utils.insistentWriteFile(folderPath + 'EventOutput.S2M', '', (err, message) => {
+                if (err) {
+                    console.error('!!!could not write to the events file', message);
+                    mainLock = false;
+                    return;
+                }
+                mainLock = false;
+            });
+        } else {
+            mainLock = false;
+        }
+
+        utils.insistentReadFile(folderPath + 'EventInput.S2M', (err, data, message) => {
+            if (err) {
+                console.log(message);
+                return;
+            }
+            let lines = data.split('\r\n').concat(eventWriteQueue).filter(el => el.trim() != '').join('\r\n');
+            if ((lines + '\r\n') != data) {
+                console.log("Contents for eventFile: " + JSON.stringify(lines.trim() + '\r\n'))
+                utils.insistentWriteFile(folderPath + 'EventInput.S2M', lines.trim(), (err, message) => {
+                    if (err) {
+                        console.error('!!!could not write to the events file', message);
+                        mainLock = false;
+                        return; 
+                    };
+                });
+                eventWriteQueue = [];
+            }
+        });
+    });
+}
+
+async function serverMain() {
     utils.insistentReadFile(folderPath + 'Output.S2M', (err, data, message) => {
         if (err) {
             console.log(message);
@@ -80,6 +145,15 @@ async function main() {
                 deletedActors.push(oldActor);
             }
         }
+
+        // Try match actors to playerState
+        if (playerState.uuid == null) {
+            let found = actors.find(actor => actor.name = playerState.actorId);
+            if (found) {
+                playerState.uuid = found.uuid;
+                found.type = playerState.name;
+            }
+        }
         
         if (sendNext || unlock) {
             sendNext = false;
@@ -90,53 +164,94 @@ async function main() {
             });
         }
 
+        
         actorState = actors;
         tickState = tick;
-
+        
+        if (tick % 600 == 0) {
+            console.log({
+                actorState,
+                playerState,
+                tickState
+            });
+        }
         //console.log(`Reading Client took ${performance.now() - tickStartTime} milliseconds`)
     });
+}
 
-    utils.insistentReadFile(folderPath + 'EventOutput.S2M', (err, data, message) => {
+async function clientMain() {
+    if (client.state == 'idle') {
+        return;
+    }
+    utils.insistentReadFile(folderPath + 'Output.S2M', (err, data, message) => {
         if (err) {
             console.log(message);
             return;
-        }
+        };
 
         let lines = data.split('\r\n');
-        for (let line of lines) {
-            if (line[0] == '#') {
-                console.log(line)
-                let response = handleEvent(line);
-                if (response) {
-                    eventWriteQueue.push(response);
+        let tick = Number.parseInt(lines.shift().split('#')[1]);
+
+        if (tick <= tickState) {
+            return;
+        }
+
+        let actors = lines.filter(line => line.trim() != '').map(line => new Actor(line));
+        let deletedActors = [];
+
+        // Identify new Actors
+        for (const actor of actors) {
+            let found = actorState.find(oldActor => oldActor.name === actor.name);
+            if (found != undefined) {
+                actor.uuid = found.uuid;
+                actor.type = found.type;
+                found.event = 'found';
+            } else {
+                if (client.state != 'init') {
+                    actor.uuid = crypto.randomUUID();
+                    actor.event = 'new';
                 }
             }
         }
 
-        utils.insistentWriteFile(folderPath + 'EventOutput.S2M', '', (err, message) => {
-            if (err) {
-                console.error('!!!could not write to the events file', message);
-                return;
+        for (const oldActor of actorState) {
+            if (oldActor.event != 'found') {
+                deletedActors.push(oldActor);
             }
-        });
+        }
 
-        utils.insistentReadFile(folderPath + 'EventInput.S2M', (err, data, message) => {
-            if (err) {
-                console.log(message);
-                return;
+        // Try match actors to playerState
+        if (playerState.uuid == null) {
+            let found = actors.find(actor => actor.name = playerState.actorId);
+            if (found) {
+                playerState.uuid = found.uuid;
+                found.type = playerState.name;
+
+                client.state = 'connecting';
             }
-            let lines = data.split('\r\n').concat(eventWriteQueue).filter(el => el.trim() != '').join('\r\n');
-            if ((lines + '\r\n') != data) {
-                console.log("Contents for eventFile: " + JSON.stringify(lines.trim() + '\r\n'))
-                utils.insistentWriteFile(folderPath + 'EventInput.S2M', lines.trim(), (err, message) => {
-                    if (err) {
-                        console.error('!!!could not write to the events file', message);
-                        return; 
-                    };
+        }
+        
+        if (client.state == 'running') {
+            if (sendNext || unlock) {
+                sendNext = false;
+                sendData({
+                    type: 'general',
+                    actors: actors,
+                    deletedActors: deletedActors
                 });
-                eventWriteQueue = [];
             }
-        });
+        }
+        
+        actorState = actors;
+        tickState = tick;
+        
+        if (tick % 600 == 0) {
+            console.log({
+                actorState,
+                tickState
+            });
+        }
+        //console.log(`Reading Client took ${performance.now() - tickStartTime} milliseconds`)
     });
 }
 
@@ -162,6 +277,14 @@ function handleEvent(event) {
             return '!Chat#Server#Could not start the server';
         }
 
+        tickState = 0;
+        actorState = [];
+
+        playerState = {
+            name: args[2],
+            actorId: args[3]
+        };
+
         server = new S2Server(Number.parseInt(args[1]) || 6400, eventCallback, (data) => {
             let packet;
             try {
@@ -172,41 +295,28 @@ function handleEvent(event) {
             }
             //console.log(packet);
 
-                if (packet.type == 'ping') {
-                    console.log('pong');
+            if (packet.type == 'ping') {
+                console.log('pong');
+                return;
+            }
+
+            if (packet.type == 'event') {
+                eventCallback(packet.message);
+                return;
+            }
+
+            if (packet.type == 'newPlayer') {
+                eventCallback('!ClientConnected\r\n!Chat#Server#New Client Connected');
+                return;
+            }
+            
+            utils.insistentAppend(folderPath + 'ServerLevel.S2M', packet.level, (err, message) => {
+                if (err) {
+                    console.log(message);
                     return;
                 }
+            });
 
-                if (packet.type == 'event') {
-                    eventCallback(packet.message);
-                    return;
-                }
-
-                if (packet.type == 'newPlayer') {
-                    utils.insistentAppend(folderPath + 'InitServerPlayers.S2M', packet.player, (err, message) => {
-                        if (err) {
-                            console.log(message);
-                            return;
-                        }
-                    });
-
-                    eventCallback('!ClientConnected\r\n!Chat#Server#New Client Connected');
-                    return;
-                }
-                
-                utils.insistentAppend(folderPath + 'ServerLevel.S2M', packet.level, (err, message) => {
-                    if (err) {
-                        console.log(message);
-                        return;
-                    }
-                });
-    
-                utils.insistentAppend(folderPath + 'ServerPlayers.S2M', packet.player, (err, message) => {
-                    if (err) {
-                        console.log(message);
-                        return;
-                    }
-                });
         });
         
         return;
@@ -226,7 +336,46 @@ function handleEvent(event) {
             console.log('there is already a connection');
             return '!Connect Error';
         }
-        client = new S2Client(args[1] || '127.0.0.1', args[2] || 8989, folderPath, eventCallback);
+
+        console.log(args);
+
+        tickState = 0;
+        actorState = [];
+
+        playerState = {
+            name: args[3],
+            actorId: args[4]
+        };
+
+        client = new S2Client(args[1] || '127.0.0.1', args[2] || 8989, eventCallback, (data) => {
+            if (client.state == 'idle' || client.state == 'init' || client.state == 'connecting2') {
+                return;
+            }
+
+            let packet;
+            try {
+                packet = JSON.parse(data);
+            } catch (error) {
+                console.log('There was a error parsing json: ', error, data);
+                return;
+            }
+            //console.log(packet);
+
+            if (packet.type == 'ping') {
+                console.log('pong');
+                return;
+            }
+
+            if (packet.type == 'event') {
+                eventCallback(packet.message);
+                return;      
+            }
+
+            console.log(packet);
+            if (client.state == 'connecting') {
+                client.state = 'connecting2'
+            }
+        });
 
         return;
     }
