@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.dl": "asp",
+        "*.inc": "asp",
+        "*.bak": "asp",
+        "fstream": "cpp"
+    }
+}

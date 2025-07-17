@@ -8,6 +8,10 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "${workspaceFolder}\\src\\*.cpp",
+                "-l",
+                "ws2_32",
+                "-I",
+                "${workspaceFolder}\\sdks\\asio-1.34.2\\include",
                 "-o",
                 "${workspaceFolder}\\dist\\main.exe"
             ],
